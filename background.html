@@ -1,0 +1,22 @@
+<html>
+<script>
+var zoom_level = 144;
+
+chrome.experimental.webRequest.onBeforeRequest.addListener(
+  function(details) {
+	if (details.type=="image") {
+		var matches = details.url.match("/[0-9]+px-");
+		if (matches != null) {
+			var resolution = Number(matches[0].match("[0-9]+"));
+			var new_resolution = Math.round(resolution*zoom_level/100);     
+			var correctedURL = details.url.replace(new RegExp("/[0-9]+px-"), "/" + new_resolution + "px-");
+			return {redirectUrl:correctedURL};
+		}  
+	};
+  }
+  ,
+  {urls:["http://upload.wikimedia.org/wikipedia/commons/*"]
+  },["blocking"]
+  );
+</script>
+</html>
