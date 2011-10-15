@@ -2,6 +2,7 @@
 <script>
 
 var zoom_of_tabs = {};
+var redirected_requests = {};
 
 chrome.experimental.webNavigation.onCommitted.addListener(
 	function(details) {
@@ -15,18 +16,24 @@ chrome.experimental.webNavigation.onCommitted.addListener(
 
 chrome.experimental.webRequest.onBeforeRequest.addListener(
   function(details) {
-	if (details.type=="image") {
-		var matches = details.url.match("/[0-9]+px-");
-		if (matches != null) {
+	if (redirected_requests[details.requestId]) {
+		delete redirected_requests[details.requestId];
+	}
+	else {
+		if (details.type=="image") {
+			var matches = details.url.match("/[0-9]+px-");
+			if (matches != null) {
 
-			var cached_zoom_level=zoom_of_tabs[details.tabId]
-			var zoom_level=cached_zoom_level?cached_zoom_level:1;			
-			var resolution = Number(matches[0].match("[0-9]+"));
-			var new_resolution = Math.round(resolution*zoom_level);     
-			var correctedURL = details.url.replace(new RegExp("/[0-9]+px-"), "/" + new_resolution + "px-");
-			return {redirectUrl:correctedURL};
-		}  
-	};
+				var cached_zoom_level=zoom_of_tabs[details.tabId]
+				var zoom_level=cached_zoom_level?cached_zoom_level:1;			
+				var resolution = Number(matches[0].match("[0-9]+"));
+				var new_resolution = Math.round(resolution*zoom_level);     
+				var correctedURL = details.url.replace(new RegExp("/[0-9]+px-"), "/" + new_resolution + "px-");
+				redirected_requests[details.requestId] = "true";
+				return {redirectUrl:correctedURL};
+			}  
+		};
+	}
   }
   ,
   {urls:["http://upload.wikimedia.org/wikipedia/commons/*"]
