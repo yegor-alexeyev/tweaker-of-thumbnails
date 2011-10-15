@@ -1,14 +1,28 @@
 <html>
 <script>
-var zoom_level = 144;
+
+var zoom_of_tabs = {};
+
+chrome.experimental.webNavigation.onCommitted.addListener(
+	function(details) {
+  chrome.tabs.sendRequest(details.tabId, {}, function(response) {
+	if (response.zoom_level){
+		zoom_of_tabs[details.tabId]=response.zoom_level;
+	}
+  });
+ });
+
 
 chrome.experimental.webRequest.onBeforeRequest.addListener(
   function(details) {
 	if (details.type=="image") {
 		var matches = details.url.match("/[0-9]+px-");
 		if (matches != null) {
+
+			var cached_zoom_level=zoom_of_tabs[details.tabId]
+			var zoom_level=cached_zoom_level?cached_zoom_level:1;			
 			var resolution = Number(matches[0].match("[0-9]+"));
-			var new_resolution = Math.round(resolution*zoom_level/100);     
+			var new_resolution = Math.round(resolution*zoom_level);     
 			var correctedURL = details.url.replace(new RegExp("/[0-9]+px-"), "/" + new_resolution + "px-");
 			return {redirectUrl:correctedURL};
 		}  
